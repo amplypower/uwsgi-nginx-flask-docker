@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --region $AWS_REGION --no-include-email)
+      - echo "Destination repo $DESTINATION_REPO_URL Base repo ${BASE_REPO}"
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-8)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - BUILD_DATE=`TZ=UTC date +%Y-%m-%dT%H:%M:%SZ`
+  build:
+    commands:
+      - echo Build started on `date`
+      - docker build -t ${DESTINATION_REPO_URL}:latest -f docker-images/python3.9.dockerfile --build-arg BASE_REPO=${BASE_REPO} .
+      - echo Build completed on `date`
+  post_build:
+    commands:
+      - echo Tagging and pushing the Docker image...
+      - docker tag ${DESTINATION_REPO_URL}:latest ${DESTINATION_REPO_URL}:${IMAGE_TAG}
+      - docker push ${DESTINATION_REPO_URL}:latest
+      - docker push ${DESTINATION_REPO_URL}:${IMAGE_TAG}
