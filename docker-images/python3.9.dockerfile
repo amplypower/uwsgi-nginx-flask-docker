@@ -1,9 +1,10 @@
-FROM tiangolo/uwsgi-nginx:python3.9
+ARG BASE_REPO
+FROM ${BASE_REPO}
 
 LABEL maintainer="Sebastian Ramirez <tiangolo@gmail.com>"
 
 # Install requirements
-COPY requirements.txt /tmp/requirements.txt
+COPY docker-images/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # URL under which static (not modified by Python) files will be requested
@@ -16,17 +17,13 @@ ENV STATIC_PATH /app/static
 # ENV STATIC_INDEX 1
 ENV STATIC_INDEX 0
 
-# Add demo app
-COPY ./app /app
-WORKDIR /app
-
 # Make /app/* available to be imported by Python globally to better support several use cases like Alembic migrations.
 ENV PYTHONPATH=/app
 
 # Move the base entrypoint to reuse it
 RUN mv /entrypoint.sh /uwsgi-nginx-entrypoint.sh
 # Copy the entrypoint that will generate Nginx additional configs
-COPY entrypoint.sh /entrypoint.sh
+COPY docker-images/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
